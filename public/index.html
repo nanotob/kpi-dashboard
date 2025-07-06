@@ -35,6 +35,23 @@
             border: 1px solid #333;
         }
 
+        .error h3 {
+            margin-bottom: 15px;
+            color: #ff6b7a;
+        }
+
+        .error p {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .error code {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
         .kpi-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -162,34 +179,6 @@
             border: 1px solid #333;
         }
 
-        .switch-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .switch-button {
-            background: #333;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin: 0 10px;
-            transition: all 0.3s ease;
-        }
-
-        .switch-button.active {
-            background: #4a9eff;
-        }
-
-        .switch-button:hover {
-            background: #555;
-        }
-
-        .switch-button.active:hover {
-            background: #369dff;
-        }
-
         .header {
             text-align: center;
             margin-bottom: 30px;
@@ -205,17 +194,34 @@
             color: #666;
             font-size: 14px;
         }
+
+        .refresh-btn {
+            background: #4a9eff;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #369dff;
+        }
+
+        .refresh-btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>📊 KPI Dashboard</h1>
         <p>Real-time business metrics from your Notion database</p>
-    </div>
-
-    <div class="switch-container">
-        <button class="switch-button active" onclick="switchToMockData()">Demo Data</button>
-        <button class="switch-button" onclick="switchToNotionData()">Notion Data</button>
+        <button class="refresh-btn" onclick="renderKPIs()" id="refreshBtn">🔄 Refresh Data</button>
     </div>
 
     <div id="loading" class="loading">Loading KPI data...</div>
@@ -231,8 +237,6 @@
         // URL del proxy - se ajusta automáticamente al dominio actual
         const PROXY_URL = window.location.origin + '/api/notion-proxy';
         
-        let currentDataSource = 'mock'; // 'mock' or 'notion'
-
         // Función para formatear números
         function formatNumber(num) {
             if (typeof num !== 'number') {
@@ -285,54 +289,6 @@
             `;
         }
 
-        // Datos de ejemplo
-        function getMockData() {
-            return [
-                {
-                    kpiName: 'Total ARR',
-                    period: 'Q3',
-                    value: 872060,
-                    qoqChange: 16,
-                    yoyChange: 60
-                },
-                {
-                    kpiName: 'Total MRR',
-                    period: 'Q3',
-                    value: 72672,
-                    qoqChange: 16,
-                    yoyChange: 60
-                },
-                {
-                    kpiName: 'Total Customers',
-                    period: 'Q3',
-                    value: 592,
-                    qoqChange: 2,
-                    yoyChange: 30
-                },
-                {
-                    kpiName: 'ACV',
-                    period: 'Q3',
-                    value: 123,
-                    qoqChange: null,
-                    yoyChange: null
-                },
-                {
-                    kpiName: 'ARR Forecast',
-                    period: 'Q3',
-                    value: 968000,
-                    qoqChange: null,
-                    yoyChange: null
-                },
-                {
-                    kpiName: 'MoM Growth',
-                    period: 'Q3',
-                    value: 16,
-                    qoqChange: 16,
-                    yoyChange: null
-                }
-            ];
-        }
-
         // Función para cargar datos desde Notion
         async function loadNotionData() {
             try {
@@ -348,6 +304,14 @@
                         notionToken: NOTION_API_KEY
                     })
                 });
+
+                // Verificar si la respuesta es JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const textResponse = await response.text();
+                    console.error('Non-JSON response:', textResponse);
+                    throw new Error(`Server returned HTML instead of JSON. This usually means there's an error in the proxy function.`);
+                }
 
                 if (!response.ok) {
                     const errorData = await response.json();
@@ -379,22 +343,18 @@
             const errorEl = document.getElementById('error');
             const containerEl = document.getElementById('kpi-container');
             const lastUpdatedEl = document.getElementById('last-updated');
+            const refreshBtn = document.getElementById('refreshBtn');
 
             try {
+                refreshBtn.disabled = true;
                 loadingEl.style.display = 'block';
                 errorEl.style.display = 'none';
                 containerEl.style.display = 'none';
 
-                let data;
-                
-                if (currentDataSource === 'mock') {
-                    data = getMockData();
-                } else {
-                    data = await loadNotionData();
-                }
+                const data = await loadNotionData();
                 
                 if (data.length === 0) {
-                    throw new Error('No data found');
+                    throw new Error('No data found in Notion database');
                 }
                 
                 // Generar HTML para todas las tarjetas
@@ -406,33 +366,27 @@
                 containerEl.style.display = 'grid';
                 
                 // Mostrar última actualización
-                const dataSourceText = currentDataSource === 'mock' ? 'Demo Data' : 'Notion Data';
-                lastUpdatedEl.textContent = `Last updated: ${new Date().toLocaleString()} (${dataSourceText})`;
+                lastUpdatedEl.textContent = `Last updated: ${new Date().toLocaleString()}`;
                 
             } catch (error) {
                 loadingEl.style.display = 'none';
                 errorEl.innerHTML = `
                     <h3>Error loading data</h3>
-                    <p>${error.message}</p>
-                    ${currentDataSource === 'notion' ? '<p>Make sure your proxy server is running and your Notion database is properly configured.</p>' : ''}
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p><strong>Proxy URL:</strong> <code>${PROXY_URL}</code></p>
+                    <p><strong>Database ID:</strong> <code>${DATABASE_ID}</code></p>
+                    <p>Please check:</p>
+                    <ul style="text-align: left; margin: 10px 0;">
+                        <li>Your proxy function is deployed correctly</li>
+                        <li>Your Notion API key is valid</li>
+                        <li>Your database ID is correct</li>
+                        <li>Your database is shared with the integration</li>
+                    </ul>
                 `;
                 errorEl.style.display = 'block';
+            } finally {
+                refreshBtn.disabled = false;
             }
-        }
-
-        // Funciones para cambiar entre fuentes de datos
-        function switchToMockData() {
-            currentDataSource = 'mock';
-            document.querySelectorAll('.switch-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            renderKPIs();
-        }
-
-        function switchToNotionData() {
-            currentDataSource = 'notion';
-            document.querySelectorAll('.switch-button').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            renderKPIs();
         }
 
         // Cargar datos al inicio
