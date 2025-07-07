@@ -450,12 +450,37 @@
 
                 const data = await response.json();
                 
+                // Debug: Ver qué datos llegan
+                console.log('Raw Notion data:', data);
+                if (data.results && data.results.length > 0) {
+                    console.log('First page properties:', data.results[0].properties);
+                    console.log('Available property keys:', Object.keys(data.results[0].properties));
+                }
+                
                 // Procesar datos de Notion
                 return data.results.map(page => {
                     const props = page.properties;
+                    
+                    // Debug: Ver las propiedades de cada página
+                    console.log('Processing page properties:', props);
+                    
+                    // Intentar diferentes formas de obtener el período
+                    let period = '';
+                    if (props['Period']?.rich_text?.[0]?.plain_text) {
+                        period = props['Period'].rich_text[0].plain_text;
+                    } else if (props['Period']?.title?.[0]?.plain_text) {
+                        period = props['Period'].title[0].plain_text;
+                    } else if (props['Period']?.select?.name) {
+                        period = props['Period'].select.name;
+                    } else if (props['Period']?.multi_select?.[0]?.name) {
+                        period = props['Period'].multi_select[0].name;
+                    }
+                    
+                    console.log('Extracted period:', period);
+                    
                     return {
                         kpiName: props['KPI Name']?.title?.[0]?.plain_text || '',
-                        period: props['Period']?.rich_text?.[0]?.plain_text || '',
+                        period: period || 'Q3', // Default fallback
                         value: props['Value']?.number || 0,
                         qoqChange: props['QoQ Change (%)']?.number || null,
                         yoyChange: props['YoY Change (%)']?.number || null
