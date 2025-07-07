@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de desempeño</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -246,16 +247,9 @@
             text-align: center;
         }
 
-        .chart-placeholder {
+        .chart-canvas {
             height: 300px;
-            background: #0a0a0a;
-            border: 2px dashed #333;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #666;
-            font-size: 14px;
+            position: relative;
         }
 
         .metric-grid {
@@ -355,8 +349,8 @@
             <div class="chart-container">
                 <div class="chart-card">
                     <div class="chart-title">MRR Trends</div>
-                    <div id="mrr-chart" class="chart-placeholder">
-                        MRR Chart - Data will be loaded here
+                    <div class="chart-canvas">
+                        <canvas id="mrr-chart"></canvas>
                     </div>
                     <div id="mrr-metrics" class="metric-grid"></div>
                 </div>
@@ -369,8 +363,8 @@
             <div class="chart-container">
                 <div class="chart-card">
                     <div class="chart-title">Customer Acquisition</div>
-                    <div id="customer-chart" class="chart-placeholder">
-                        Customer Chart - Data will be loaded here
+                    <div class="chart-canvas">
+                        <canvas id="customer-chart"></canvas>
                     </div>
                     <div id="customer-metrics" class="metric-grid"></div>
                 </div>
@@ -383,8 +377,8 @@
             <div class="chart-container">
                 <div class="chart-card">
                     <div class="chart-title">Product Revenue Distribution</div>
-                    <div id="product-chart" class="chart-placeholder">
-                        Product Chart - Data will be loaded here
+                    <div class="chart-canvas">
+                        <canvas id="product-chart"></canvas>
                     </div>
                     <div id="product-metrics" class="metric-grid"></div>
                 </div>
@@ -397,8 +391,8 @@
             <div class="chart-container">
                 <div class="chart-card">
                     <div class="chart-title">Growth Trends</div>
-                    <div id="growth-chart" class="chart-placeholder">
-                        Growth Chart - Data will be loaded here
+                    <div class="chart-canvas">
+                        <canvas id="growth-chart"></canvas>
                     </div>
                     <div id="growth-metrics" class="metric-grid"></div>
                 </div>
@@ -411,8 +405,8 @@
             <div class="chart-container">
                 <div class="chart-card">
                     <div class="chart-title">Revenue Performance</div>
-                    <div id="comparison-chart" class="chart-placeholder">
-                        Comparison Chart - Data will be loaded here
+                    <div class="chart-canvas">
+                        <canvas id="comparison-chart"></canvas>
                     </div>
                     <div id="comparison-metrics" class="metric-grid"></div>
                 </div>
@@ -430,13 +424,108 @@
             NOTION_API_KEY: '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',
             DATABASES: {
                 MAIN_KPI: '229e8754867c80dc9db6fa761778b101',
-                MONTHLY_MRR: '229e8754867c80239bb6e48ccdb33c3a', // TODO: Agregar tu Database ID
-                CUSTOMER_METRICS: '229e8754867c8014936beddffce040be', // TODO: Agregar tu Database ID
-                REVENUE_BY_PRODUCT: '229e8754867c80b7a34ff690ced6f060', // TODO: Agregar tu Database ID
-                CUSTOMER_GROWTH: '229e8754867c806b94a8f8f9b0a1a01e', // TODO: Agregar tu Database ID
-                REVENUE_COMPARISON: '229e8754867c80b1a97ade6ac9c368f1' // TODO: Agregar tu Database ID
+                MONTHLY_MRR: '229e8754867c80239bb6e48ccdb33c3a',
+                CUSTOMER_METRICS: '229e8754867c8014936beddffce040be',
+                REVENUE_BY_PRODUCT: '229e8754867c80b7a34ff690ced6f060',
+                CUSTOMER_GROWTH: '229e8754867c806b94a8f8f9b0a1a01e',
+                REVENUE_COMPARISON: '229e8754867c80b1a97ade6ac9c368f1'
             },
             PROXY_URL: window.location.origin + '/api/notion-proxy'
+        };
+
+        // ===========================================
+        // DATOS DE PRUEBA (MIENTRAS SOLUCIONAS EL PROXY)
+        // ===========================================
+        const MOCK_DATA = {
+            mainKPIs: [
+                {
+                    kpiName: 'Total ARR',
+                    period: 'Q3',
+                    value: 872060,
+                    qoqChange: 16,
+                    yoyChange: 60
+                },
+                {
+                    kpiName: 'Total MRR',
+                    period: 'Q3',
+                    value: 72672,
+                    qoqChange: 16,
+                    yoyChange: 60
+                },
+                {
+                    kpiName: 'Total Customers',
+                    period: 'Q3',
+                    value: 592,
+                    qoqChange: 2,
+                    yoyChange: 30
+                },
+                {
+                    kpiName: 'ACV',
+                    period: 'Q3',
+                    value: 123,
+                    qoqChange: -5,
+                    yoyChange: 15
+                },
+                {
+                    kpiName: 'ARR Forecast',
+                    period: 'End of Q3',
+                    value: 968000,
+                    qoqChange: 12,
+                    yoyChange: 45
+                },
+                {
+                    kpiName: 'MoM Growth',
+                    period: 'Q3',
+                    value: 16,
+                    qoqChange: 8,
+                    yoyChange: 25
+                }
+            ],
+            mrrData: [
+                { name: 'Jan', newMRR: 1000, month: '2024-01-01', year: 2024 },
+                { name: 'Feb', newMRR: 1500, month: '2024-02-01', year: 2024 },
+                { name: 'Mar', newMRR: 2000, month: '2024-03-01', year: 2024 },
+                { name: 'Apr', newMRR: 2500, month: '2024-04-01', year: 2024 },
+                { name: 'May', newMRR: 3000, month: '2024-05-01', year: 2024 },
+                { name: 'Jun', newMRR: 3500, month: '2024-06-01', year: 2024 },
+                { name: 'Jul', newMRR: 4000, month: '2024-07-01', year: 2024 },
+                { name: 'Aug', newMRR: 4500, month: '2024-08-01', year: 2024 },
+                { name: 'Sep', newMRR: 5000, month: '2024-09-01', year: 2024 },
+                { name: 'Oct', newMRR: 5500, month: '2024-10-01', year: 2024 },
+                { name: 'Nov', newMRR: 6000, month: '2024-11-01', year: 2024 }
+            ],
+            customerData: [
+                { name: 'Jan', newCustomers: 450, newTrials: 150, month: '2024-01-01', year: 2024 },
+                { name: 'Feb', newCustomers: 480, newTrials: 130, month: '2024-02-01', year: 2024 },
+                { name: 'Mar', newCustomers: 520, newTrials: 180, month: '2024-03-01', year: 2024 },
+                { name: 'Apr', newCustomers: 470, newTrials: 120, month: '2024-04-01', year: 2024 },
+                { name: 'May', newCustomers: 490, newTrials: 140, month: '2024-05-01', year: 2024 },
+                { name: 'Jun', newCustomers: 530, newTrials: 160, month: '2024-06-01', year: 2024 },
+                { name: 'Jul', newCustomers: 510, newTrials: 170, month: '2024-07-01', year: 2024 },
+                { name: 'Aug', newCustomers: 540, newTrials: 190, month: '2024-08-01', year: 2024 },
+                { name: 'Sep', newCustomers: 480, newTrials: 110, month: '2024-09-01', year: 2024 },
+                { name: 'Oct', newCustomers: 520, newTrials: 130, month: '2024-10-01', year: 2024 },
+                { name: 'Nov', newCustomers: 550, newTrials: 200, month: '2024-11-01', year: 2024 }
+            ],
+            productData: [
+                { product: 'Lite', revenue: 184569, percentage: 49.3, color: '#4a9eff' },
+                { product: 'Pro', revenue: 326468, percentage: 27.7, color: '#00ff88' },
+                { product: 'Enterprise', revenue: 86503, percentage: 23.0, color: '#8b5cf6' }
+            ],
+            growthData: [
+                { name: 'Jan', customerCount: 2800, growthPercentage: 12, month: '2024-01-01', year: 2024 },
+                { name: 'Feb', customerCount: 3200, growthPercentage: 14, month: '2024-02-01', year: 2024 },
+                { name: 'Mar', customerCount: 3600, growthPercentage: 13, month: '2024-03-01', year: 2024 },
+                { name: 'Apr', customerCount: 4100, growthPercentage: 14, month: '2024-04-01', year: 2024 },
+                { name: 'May', customerCount: 3800, growthPercentage: -7, month: '2024-05-01', year: 2024 },
+                { name: 'Jun', customerCount: 4200, growthPercentage: 11, month: '2024-06-01', year: 2024 },
+                { name: 'Jul', customerCount: 4800, growthPercentage: 14, month: '2024-07-01', year: 2024 }
+            ],
+            comparisonData: [
+                { name: 'Q1', revenueLite: 150000, revenuePro: 200000, revenueEnterprise: 100000, goal: 500000, month: '2024-03-01', year: 2024 },
+                { name: 'Q2', revenueLite: 170000, revenuePro: 240000, revenueEnterprise: 120000, goal: 550000, month: '2024-06-01', year: 2024 },
+                { name: 'Q3', revenueLite: 184569, revenuePro: 326468, revenueEnterprise: 86503, goal: 600000, month: '2024-09-01', year: 2024 }
+            ]
         };
 
         // ===========================================
@@ -467,6 +556,261 @@
         }
 
         // ===========================================
+        // FUNCIONES DE GRÁFICOS
+        // ===========================================
+        function createMRRChart(data) {
+            const ctx = document.getElementById('mrr-chart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (window.mrrChart) {
+                window.mrrChart.destroy();
+            }
+            
+            window.mrrChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.name),
+                    datasets: [{
+                        label: 'New MRR',
+                        data: data.map(item => item.newMRR),
+                        backgroundColor: '#4a9eff',
+                        borderColor: '#369dff',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: '#333' },
+                            ticks: { color: '#666' }
+                        },
+                        x: {
+                            grid: { color: '#333' },
+                            ticks: { color: '#666' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createCustomerChart(data) {
+            const ctx = document.getElementById('customer-chart').getContext('2d');
+            
+            if (window.customerChart) {
+                window.customerChart.destroy();
+            }
+            
+            window.customerChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item.name),
+                    datasets: [{
+                        label: 'New Customers',
+                        data: data.map(item => item.newCustomers),
+                        borderColor: '#00ff88',
+                        backgroundColor: 'rgba(0, 255, 136, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'New Trials',
+                        data: data.map(item => item.newTrials),
+                        borderColor: '#ff4757',
+                        backgroundColor: 'rgba(255, 71, 87, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: '#333' },
+                            ticks: { color: '#666' }
+                        },
+                        x: {
+                            grid: { color: '#333' },
+                            ticks: { color: '#666' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createProductChart(data) {
+            const ctx = document.getElementById('product-chart').getContext('2d');
+            
+            if (window.productChart) {
+                window.productChart.destroy();
+            }
+            
+            window.productChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(item => item.product),
+                    datasets: [{
+                        data: data.map(item => item.percentage),
+                        backgroundColor: data.map(item => item.color),
+                        borderWidth: 2,
+                        borderColor: '#0a0a0a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'bottom',
+                            labels: { 
+                                color: '#fff',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createGrowthChart(data) {
+            const ctx = document.getElementById('growth-chart').getContext('2d');
+            
+            if (window.growthChart) {
+                window.growthChart.destroy();
+            }
+            
+            window.growthChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.name),
+                    datasets: [{
+                        label: 'Customer Count',
+                        data: data.map(item => item.customerCount),
+                        backgroundColor: '#8b5cf6',
+                        borderColor: '#a855f7',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Growth %',
+                        data: data.map(item => item.growthPercentage),
+                        type: 'line',
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            grid: { color: '#333' },
+                            ticks: { color: '#666' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#666' }
+                        },
+                        x: {
+                            grid: { color: '#333' },
+                            ticks: { color: '#666' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createComparisonChart(data) {
+            const ctx = document.getElementById('comparison-chart').getContext('2d');
+            
+            if (window.comparisonChart) {
+                window.comparisonChart.destroy();
+            }
+            
+            window.comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item.name),
+                    datasets: [{
+                        label: 'Revenue - Lite',
+                        data: data.map(item => item.revenueLite),
+                        backgroundColor: '#4a9eff',
+                        stack: 'Stack 0'
+                    }, {
+                        label: 'Revenue - Pro',
+                        data: data.map(item => item.revenuePro),
+                        backgroundColor: '#00ff88',
+                        stack: 'Stack 0'
+                    }, {
+                        label: 'Revenue - Enterprise',
+                        data: data.map(item => item.revenueEnterprise),
+                        backgroundColor: '#8b5cf6',
+                        stack: 'Stack 0'
+                    }, {
+                        label: 'Goal',
+                        data: data.map(item => item.goal),
+                        type: 'line',
+                        borderColor: '#ff4757',
+                        backgroundColor: 'rgba(255, 71, 87, 0.1)',
+                        fill: false,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: true,
+                            labels: { color: '#fff' }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: '#333' },
+                            ticks: { color: '#666' }
+                        },
+                        x: {
+                            grid: { color: '#333' },
+                            ticks: { color: '#666' }
+                        }
+                    }
+                }
+            });
+        }
+
+         // ===========================================
         // COMPONENTES UI
         // ===========================================
         function createKPICard(data) {
